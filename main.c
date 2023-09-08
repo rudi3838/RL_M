@@ -85,23 +85,6 @@ main (int argc, char *argv[])
   FILE *pFile;
 	
   
-  /*
-   *  first task is to identify the player
-   */
-  /*init curses ~Gibbon */
-  init_term ();			/* setup the terminal (find out what type) for termcap */
-  scbr ();
-  /*
-   *  second task is to prepare the pathnames the player will need
-   */
-
-
-  /* Set up the input and output buffers.
-   */
-  lpbuf = (char *) malloc ((5 * BUFBIG) >> 2);	/* output buffer */
-  inbuffer = (char *) malloc ((5 * MAXIBUF) >> 2);	/* output buffer */
-  if ((lpbuf == 0) || (inbuffer == 0))
-    died (-285);		/* malloc() failure */
 
 #if defined WINDOWS_VS
   strcpy(savefilename,getenv("APPDATA"));
@@ -126,8 +109,89 @@ main (int argc, char *argv[])
   strcat(diagfile,"/Larn/larndiagfile");
 #endif
 #else
+
+//herausfinden, welcher save verwendet werden soll
+int savespace = 0;
+char str_savespace[10];
+printf("Which Save should be loaded?\n\n");
+
+// LOAD SAVINGSFILE
+char savespaceinfo[100][2][100];
+char savespaceinfofile[100];
+strcpy(savespaceinfofile,getenv("HOME"));
+strcat(savespaceinfofile,"/.larn/larnsavefileinfo");
+
+FILE *datei = fopen(savespaceinfofile, "r");
+if (datei == NULL) {
+    strcpy(savespaceinfo[0][0],"the end");
+} else {
+	char buffer[100];  // Ein Puffer zum Lesen von Zeichenketten
+
+	int zaehlervariable_saveinfo = 0;
+
+	// Zeichenketten aus der Datei lesen und anzeigen
+	while (fgets(buffer, sizeof(buffer), datei) != NULL) {
+		buffer[strcspn(buffer, "\n")] = '\0';
+    	printf("%s", buffer);
+		if (zaehlervariable_saveinfo%2 != 0) printf("\n");
+		else printf("\t");
+		strcpy(savespaceinfo[zaehlervariable_saveinfo/2][zaehlervariable_saveinfo%2], buffer);
+		zaehlervariable_saveinfo++;
+	}
+	fclose(datei);
+	strcpy(savespaceinfo[zaehlervariable_saveinfo/2][0],"the end");
+}
+
+// ENTER THE NUMBER
+printf("\nEnter number and press ENTER: ");
+if (scanf("%d", &savespace)!=1) {
+	printf("\n\nFehler bei der Eingabe!!!!\nABBRUCH...");
+	return -27;
+}
+printf("\nYou entered %d.\n", savespace);
+sprintf(str_savespace, "%d", savespace);
+
+// CHECK IF NEW 
+int laufvar = 0;
+while (1==1){
+	if ( strcmp(savespaceinfo[laufvar][0], "the end") == 0 ) {
+		strcpy(savespaceinfo[laufvar+1][0],"the end");
+		strcpy(savespaceinfo[laufvar][0],str_savespace);
+
+		printf("\nEnter commentary(1 word) to this game you want to start. Then press ENTER.\nCommentary: ");
+		char temparr[100];
+		scanf("%99s",temparr);
+		strcpy(savespaceinfo[laufvar][1],temparr);
+
+		break;
+	}
+	if ( savespace == atoi(savespaceinfo[laufvar][0]) ) break;
+	laufvar++;
+}
+
+// SAVE SAVINGSFILE
+datei = fopen(savespaceinfofile, "w");
+
+if (datei == NULL) {
+	perror("Fehler beim Öffnen der Datei");
+	return 1;
+}
+
+// String-Array in die Datei schreiben
+int zaehlervariable_saveinfo = 0;
+while (1 == 1) {
+	if ( strcmp(savespaceinfo[zaehlervariable_saveinfo/2][0], "the end") == 0 ) break;
+	fprintf(datei, "%s\n", savespaceinfo[zaehlervariable_saveinfo/2][zaehlervariable_saveinfo%2]);
+	zaehlervariable_saveinfo++;
+}
+
+// Datei schließen
+fclose(datei);
+
+
   strcpy(savefilename,getenv("HOME"));
   strcat(savefilename,"/.larn/larnsavefile");
+  strcat(savefilename,str_savespace);
 
   strcpy(scorefile,getenv("HOME"));
   strcat(scorefile,"/.larn/larnscorefile");
@@ -148,6 +212,25 @@ main (int argc, char *argv[])
   strcat(diagfile,"/.larn/larndiagfile");
 #endif
 #endif
+
+
+  /*
+   *  first task is to identify the player
+   */
+  /*init curses ~Gibbon */
+  init_term ();			/* setup the terminal (find out what type) for termcap */
+  scbr ();
+  /*
+   *  second task is to prepare the pathnames the player will need
+   */
+
+
+  /* Set up the input and output buffers.
+   */
+  lpbuf = (char *) malloc ((5 * BUFBIG) >> 2);	/* output buffer */
+  inbuffer = (char *) malloc ((5 * MAXIBUF) >> 2);	/* output buffer */
+  if ((lpbuf == 0) || (inbuffer == 0))
+    died (-285);		/* malloc() failure */
 
 
   /*
